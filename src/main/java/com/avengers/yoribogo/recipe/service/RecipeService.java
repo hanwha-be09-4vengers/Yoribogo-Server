@@ -28,6 +28,4 @@ public interface RecipeService {
     // 요리 추천하기
     BaseRecipeDTO registRecommendRecipe(RequestRecommendDTO requestRecommendDTO);
 
-    // 이미지 생성하기
-    String registImages(String menuName);
 }

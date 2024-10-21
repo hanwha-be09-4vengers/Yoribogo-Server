@@ -13,7 +13,6 @@ import org.springframework.scheduling.annotation.EnableScheduling;
 @EnableScheduling  // 스케줄러 활성화
 @EnableJpaRepositories
 @EnableMongoRepositories(basePackages = "com.avengers.yoribogo.notification.weeklypopularrecipe.repository")
-
 @EnableAsync
 public class ServerApplication {
 
