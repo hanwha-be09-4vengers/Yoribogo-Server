@@ -14,7 +14,11 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.AuthenticationFailureHandler;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
-import org.springframework.security.web.util.matcher.AntPathRequestMatcher;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+
+import java.util.List;
 
 @Configuration
 @EnableWebSecurity
@@ -26,23 +30,21 @@ public class WebSecurity {
     private JwtUtil jwtUtil;
 
     @Autowired
-    public WebSecurity(BCryptPasswordEncoder bCryptPasswordEncoder,UserService userService
-            ,Environment env,JwtUtil jwtUtil) {
+    public WebSecurity(BCryptPasswordEncoder bCryptPasswordEncoder, UserService userService, Environment env, JwtUtil jwtUtil) {
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
-        this.userService=userService;
-        this.env=env;
-        this.jwtUtil=jwtUtil;
+        this.userService = userService;
+        this.env = env;
+        this.jwtUtil = jwtUtil;
     }
 
-
-    /* 설명. 인가(Authoriazation)용 메소드(인증 필터 추가) */
     @Bean
     protected SecurityFilterChain configure(HttpSecurity http) throws Exception {
 
-        /* 설명. csrf 비활성화 */
-        http.csrf((csrf) -> csrf.disable());
+        // Enable CORS and disable CSRF
+        http.cors(cors -> cors.configurationSource(corsConfigurationSource()))
+                .csrf(csrf -> csrf.disable());
 
-        /* 설명. 로그인 시 추가할 authenticationManager 만들기 */
+        // AuthenticationManager setup
         AuthenticationManagerBuilder authenticationManagerBuilder =
                 http.getSharedObject(AuthenticationManagerBuilder.class);
         authenticationManagerBuilder.userDetailsService(userService)
@@ -50,37 +52,20 @@ public class WebSecurity {
 
         AuthenticationManager authenticationManager = authenticationManagerBuilder.build();
 
-        http.authorizeHttpRequests((authz) ->
-                        authz   .requestMatchers(new AntPathRequestMatcher("/login", "POST")).permitAll()
-                                .requestMatchers(new AntPathRequestMatcher("/api/**", "POST")).permitAll()
-                                .requestMatchers(new AntPathRequestMatcher("/api/**", "GET")).permitAll()
-                                .requestMatchers(new AntPathRequestMatcher("/api/**", "PATCH")).permitAll()
-                                .requestMatchers(new AntPathRequestMatcher("/api/**", "PUT")).permitAll()
-                                .requestMatchers(new AntPathRequestMatcher("/api/**", "DELETE")).permitAll()
-                                // 설명. 모든 API의 권한설정
-//                                .requestMatchers(new AntPathRequestMatcher("/api/**", "POST")).permitAll()
-//                                .requestMatchers(new AntPathRequestMatcher("/api/**", "DELETE")).hasRole("ENTERPRISE")
-//                                .requestMatchers(new AntPathRequestMatcher("/api/**", "GET")).hasRole("ENTERPRISE")
-//                                .requestMatchers(new AntPathRequestMatcher("/api/**", "PATCH")).hasRole("ENTERPRISE")
-//                                .requestMatchers(new AntPathRequestMatcher("/api/**", "PUT")).hasRole("ENTERPRISE")
-//                                .requestMatchers(new AntPathRequestMatcher("/api/**", "DELETE")).hasRole("ENTERPRISE")
-
-                             .anyRequest().authenticated()
+        http.authorizeHttpRequests(authz -> authz
+                        .requestMatchers("/login", "POST").permitAll()
+                        .requestMatchers("/api/**").permitAll()
+                        .requestMatchers("/**").permitAll()
+                        .anyRequest().authenticated()
                 )
-                /* 설명. authenticationManager 등록(UserDetails를 상속받는 Service 계층 + BCrypt 암호화) */
                 .authenticationManager(authenticationManager)
-
-
-                /* 설명. session 방식을 사용하지 않음(JWT Token 방식 사용 시 설정할 내용) */
-                .sessionManagement((session) -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 .addFilter(getAuthenticationFilter(authenticationManager))
                 .addFilterBefore(new JwtFilter(userService, jwtUtil), UsernamePasswordAuthenticationFilter.class);
-
 
         return http.build();
     }
 
-    /* 설명. 인증(Authentication)용 메소드(인증 필터 반환) */
     private AuthenticationFilter getAuthenticationFilter(AuthenticationManager authenticationManager) {
         AuthenticationFilter authenticationFilter = new AuthenticationFilter(authenticationManager, userService, env, bCryptPasswordEncoder);
         authenticationFilter.setAuthenticationFailureHandler(authenticationFailureHandler());
@@ -92,5 +77,16 @@ public class WebSecurity {
         return new CustomAuthenticationFailureHandler();
     }
 
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource() {
+        CorsConfiguration configuration = new CorsConfiguration();
+        configuration.setAllowCredentials(true);
+        configuration.setAllowedOrigins(List.of("http://localhost:5173")); // Allow frontend
+        configuration.setAllowedMethods(List.of("GET", "POST", "PUT", "DELETE", "PATCH", "OPTIONS"));
+        configuration.setAllowedHeaders(List.of("*")); // Allow all headers
 
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", configuration);
+        return source;
+    }
 }

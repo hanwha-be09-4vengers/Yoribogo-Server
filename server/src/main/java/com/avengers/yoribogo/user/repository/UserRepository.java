@@ -36,4 +36,7 @@ public interface UserRepository extends JpaRepository<UserEntity, Long> {
     // userId로 사용자 조회 (페치 조인으로 tier 함께 조회)
     @Query("SELECT u FROM UserEntity u LEFT JOIN FETCH u.tier WHERE u.userId = :userId")
     Optional<UserEntity> findByUserIdWithTier(@Param("userId") Long userId);
+
+    // 알림 기능 위해 추가
+    Optional<UserEntity> findById(Long id);  // 특정 회원을 Optional로 조회
 }

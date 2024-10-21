@@ -155,6 +155,7 @@ public class JwtUtil {
                 .compact();
     }
 
+
     // 설명. 액세스 토큰 만료 시간 가져오기
     public long getAccessTokenExpiration() {
         return System.currentTimeMillis() + accessExpirationTime;

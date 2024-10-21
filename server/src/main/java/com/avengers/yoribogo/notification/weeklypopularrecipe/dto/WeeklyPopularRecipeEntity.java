@@ -5,10 +5,11 @@ import org.springframework.data.annotation.Id;
 import org.springframework.data.mongodb.core.mapping.Document;
 import org.springframework.data.mongodb.core.mapping.Field;
 import java.time.LocalDateTime;
+import java.time.ZonedDateTime;
 
 @Document(collection = "weeklyrecipe")  // MongoDB 컬렉션 이름 매핑
 @Data
-public class WeeklyPopularRecipe {
+public class WeeklyPopularRecipeEntity {
     @Id
     private String id;  // MongoDB의 _id 필드와 매핑
 
@@ -22,6 +23,6 @@ public class WeeklyPopularRecipe {
     private String userId;        // user_id 필드
 
     @Field("created_at")
-    private LocalDateTime createdAt;  // created_at 필드
+    private ZonedDateTime createdAt;  // created_at 필드
 
 }
